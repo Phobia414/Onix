@@ -41,6 +41,17 @@ async def init_db():
                 link TEXT
             )
         """)
+        # НОВАЯ ТАБЛИЦА ДЛЯ ОТЗЫВОВ
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER UNIQUE,
+                user_id INTEGER,
+                rating INTEGER,
+                text TEXT,
+                created_at TEXT
+            )
+        """)
         await db.commit()
 
 
@@ -73,7 +84,6 @@ async def block_user(user_id: int, status: bool = True, penalty: int = 0, order_
         await db.commit()
 
 
-# ОБНОВЛЕНО: добавлена сложность
 async def create_order(user_id: int, complexity: str, bot_type: str, task: str, budget: str) -> int:
     now_str = datetime.now().isoformat()
     async with aiosqlite.connect(DB_NAME) as db:
@@ -195,3 +205,36 @@ async def delete_portfolio(item_id: int):
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("DELETE FROM portfolio WHERE id = ?", (item_id,))
         await db.commit()
+
+
+# --- НОВЫЕ ФУНКЦИИ ДЛЯ ОТЗЫВОВ ---
+async def check_order_reviewed(order_id: int) -> bool:
+    async with aiosqlite.connect(DB_NAME) as db:
+        cursor = await db.execute("SELECT id FROM reviews WHERE order_id = ?", (order_id,))
+        return await cursor.fetchone() is not None
+
+
+async def add_review(order_id: int, user_id: int, rating: int, text: str):
+    now_str = datetime.now().isoformat()
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute(
+            "INSERT INTO reviews (order_id, user_id, rating, text, created_at) VALUES (?, ?, ?, ?, ?)",
+            (order_id, user_id, rating, text, now_str)
+        )
+        await db.commit()
+
+
+async def get_reviews_stats():
+    async with aiosqlite.connect(DB_NAME) as db:
+        cursor = await db.execute("SELECT COUNT(*), AVG(rating) FROM reviews")
+        count, avg = await cursor.fetchone()
+        return count or 0, round(avg, 1) if avg else 0.0
+
+
+async def get_recent_reviews(limit: int = 5):
+    async with aiosqlite.connect(DB_NAME) as db:
+        cursor = await db.execute("""
+            SELECT rating, text, created_at FROM reviews 
+            ORDER BY id DESC LIMIT ?
+        """, (limit,))
+        return await cursor.fetchall()

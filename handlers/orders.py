@@ -3,7 +3,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.client_kb import (
-    main_menu_kb, order_pay_kb, cancel_kb, deliver_result_kb, back_to_main_kb,
+    main_menu_kb, order_pay_kb, cancel_kb, deliver_result_kb, back_to_main_kb, back_to_info_kb,
     complexity_kb, easy_bots_kb, medium_bots_kb, hard_bots_kb, get_time_left
 )
 from keyboards.admin_kb import admin_order_kb, STATUSES
@@ -23,7 +23,7 @@ class OrderState(StatesGroup):
 # Тексты прайсов
 EASY_TEXT = (
     "🟢 <b>Легкие боты (от 500 ₽)</b>\n"
-    "━━━━━━━━━━━━━━━━━\n\n"
+    "━━━━━━━━━━━━━━━━━━\n\n"
     "1. Анкетный бот — передает анкеты пользователей админу\n"
     "2. Бот счетчик — считает количество чего-либо\n"
     "3. Инфо-рассыльщик — для отправки новостей\n"
@@ -32,7 +32,7 @@ EASY_TEXT = (
 )
 MEDIUM_TEXT = (
     "🟡 <b>Средние боты (от 1500 ₽)</b>\n"
-    "━━━━━━━━━━━━━━━━━\n\n"
+    "━━━━━━━━━━━━━━━━━━\n\n"
     "1. Боты с БД — сохранение профилей, истории заказов\n"
     "2. Боты для записи — салоны, репетиторы\n"
     "3. Боты с API — отслеживание посылок, курсы валют\n"
@@ -42,7 +42,7 @@ MEDIUM_TEXT = (
 )
 HARD_TEXT = (
     "🔴 <b>Сложные боты (от 6000 ₽)</b>\n"
-    "━━━━━━━━━━━━━━━━━\n\n"
+    "━━━━━━━━━━━━━━━━━━\n\n"
     "1. Магазины с автовыдачей — моментальная выдача ключей\n"
     "2. Боты с админ-панелью — управление прямо в боте\n"
     "3. Боты с ИИ — интеграция ChatGPT, генерация картинок\n"
@@ -65,7 +65,7 @@ async def start_order(callback: CallbackQuery, state: FSMContext):
 # --- ШАГ 2: Выбор бота и показ прайса ---
 @router.callback_query(OrderState.choosing_complexity, F.data.startswith("comp_"))
 async def process_complexity(callback: CallbackQuery, state: FSMContext):
-    complexity = callback.data.split("_")[1]  # "Легкий", "Средний" или "Сложный"
+    complexity = callback.data.split("_")[1]
     await state.update_data(complexity=complexity)
 
     if complexity == "Легкий":
@@ -112,7 +112,6 @@ async def process_budget(message: Message, state: FSMContext):
     if not message.from_user or not message.text: return
     data = await state.get_data()
 
-    # Создаем заявку
     order_id = await create_order(
         message.from_user.id,
         data['complexity'],
@@ -124,16 +123,15 @@ async def process_budget(message: Message, state: FSMContext):
 
     await message.answer("🎉 <b>Твоя заявка успешно создана!</b>\n\nЯ уже изучаю детали.", reply_markup=main_menu_kb())
 
-    # Отправляем в админку
     admin_text = (
         f"🚨 <b>НОВАЯ ЗАЯВКА №{order_id}</b>\n"
-        f"━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━━\n\n"
         f"👤 <b>Клиент:</b> @{message.from_user.username}\n"
         f"🆔 <code>{message.from_user.id}</code>\n\n"
         f"⚙️ <b>Сложность:</b> {data['complexity']}\n"
         f"🤖 <b>Тип:</b> {data['bot_type']}\n"
         f"💰 <b>Бюджет:</b> {message.text} ₽\n\n"
-        f"━━━━━━━━━━━━━━━━━\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
         f"📝 <b>Задача:</b>\n<i>{data['task']}</i>"
     )
     await message.bot.send_message(ADMIN_ID, admin_text, reply_markup=admin_order_kb(order_id, "new"))
@@ -152,18 +150,17 @@ async def my_orders(callback: CallbackQuery):
     await callback.message.edit_text("📊 <b>Твои заявки:</b>", reply_markup=back_to_main_kb())
 
     for o in orders:
-        # o = (id, bot_type, task, price, status, created_at)
         status_text = STATUSES.get(o[4], o[4])
         price_text = f"<b>{o[3]} ₽</b>" if o[3] > 0 else "Рассчитывается"
 
         card = (
             f"<b>Заявка №{o[0]}</b>\n"
-            f"━━━━━━━━━━━━━━━━━\n\n"
+            f"━━━━━━━━━━━━━━━━━━\n\n"
             f"📌 <b>Тип:</b> {o[1]}\n\n"
             f"📊 <b>Статус:</b> {status_text}\n\n"
             f"💰 <b>Цена:</b> {price_text}\n\n"
             f"📝 <b>Задача:</b>\n<i>{o[2][:50]}...</i>\n\n"
-            f"━━━━━━━━━━━━━━━━━"
+            f"━━━━━━━━━━━━━━━━━━"
         )
 
         view_kb = InlineKeyboardMarkup(
@@ -177,7 +174,7 @@ async def my_orders(callback: CallbackQuery):
     await callback.answer()
 
 
-# --- ПРОСМОТР ЗАЯВКИ (С обработкой статуса "Закрыта") ---
+# --- ПРОСМОТР ЗАЯВКИ ---
 @router.callback_query(F.data.startswith("view_order_"))
 async def view_single_order(callback: CallbackQuery):
     order_id = int(callback.data.split("_")[2])
@@ -191,19 +188,21 @@ async def view_single_order(callback: CallbackQuery):
 
     card = (
         f"<b>Заявка №{order[0]}</b>\n"
-        f"━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━━\n\n"
         f"⚙️ <b>Сложность:</b> {order[2]}\n"
         f"📌 <b>Тип:</b> {order[3]}\n\n"
         f"📊 <b>Статус:</b> {status_text}\n\n"
         f"💰 <b>Цена:</b> {price_text}\n\n"
         f"📝 <b>Задача:</b>\n<i>{order[4]}</i>\n\n"
-        f"━━━━━━━━━━━━━━━━━"
+        f"━━━━━━━━━━━━━━━━━━"
     )
 
-    # Если заявка закрыта, убираем все кнопки действий
+    # Если заявка закрыта, даем возможность оставить отзыв
     if order[7] == "closed":
-        kb = InlineKeyboardMarkup(
-            inline_keyboard=[[InlineKeyboardButton(text="🔙 К заявкам", callback_data="my_orders")]])
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="⭐ Оставить отзыв", callback_data=f"leave_review_{order_id}")],
+            [InlineKeyboardButton(text="🔙 К заявкам", callback_data="my_orders")]
+        ])
         await callback.message.edit_text(card, reply_markup=kb)
         await callback.answer()
         return
@@ -240,8 +239,8 @@ async def cancel_my_order(callback: CallbackQuery):
 # --- РЕФЕРАЛЬНАЯ ПРОГРАММА ---
 @router.callback_query(F.data == "referral_menu")
 async def show_referral_menu(callback: CallbackQuery):
-    text = "🎁 <b>Реферальная программа</b>\n━━━━━━━━━━━━━━━━━\n\nУ нас действует система «1 заявка = 1 друг».\n\nСкидка <b>10%</b> на заявку, если приведете друга.\n\n1. Перейдите в <b>«Мои заявки»</b>.\n2. Нажмите <b>«Пригласить друга»</b> под заявкой."
-    await callback.message.edit_text(text, reply_markup=back_to_main_kb())
+    text = "🎁 <b>Реферальная программа</b>\n━━━━━━━━━━━━━━━━━━\n\nУ нас действует система «1 заявка = 1 друг».\n\nСкидка <b>10%</b> на заявку, если приведете друга.\n\n1. Перейдите в <b>«Мои заявки»</b>.\n2. Нажмите <b>«Пригласить друга»</b> под заявкой."
+    await callback.message.edit_text(text, reply_markup=back_to_info_kb())
     await callback.answer()
 
 
@@ -251,7 +250,7 @@ async def generate_ref_link(callback: CallbackQuery, bot: Bot):
     bot_info = await bot.get_me()
     ref_link = f"https://t.me/{bot_info.username}?start=ref_{order_id}"
     await callback.message.answer(
-        f"🎁 <b>Ссылка для приглашения</b>\n━━━━━━━━━━━━━━━━━\n\nСкидка 10% для <b>заявки №{order_id}</b>.\n\n<code>{ref_link}</code>")
+        f"🎁 <b>Ссылка для приглашения</b>\n━━━━━━━━━━━━━━━━━━\n\nСкидка 10% для <b>заявки №{order_id}</b>.\n\n<code>{ref_link}</code>")
     await callback.answer()
 
 
@@ -280,7 +279,14 @@ async def pay_50(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("accept_work_"))
 async def accept_work(callback: CallbackQuery):
     order_id = int(callback.data.split("_")[2])
-    await callback.message.edit_text("🎉 <b>Отлично! Спасибо за принятие работы.</b>", reply_markup=main_menu_kb())
+
+    # Сразу предлагаем оставить отзыв
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⭐ Оставить отзыв", callback_data=f"leave_review_{order_id}")],
+        [InlineKeyboardButton(text="🏠 В главное меню", callback_data="cancel_action")]
+    ])
+
+    await callback.message.edit_text("🎉 <b>Отлично! Спасибо за принятие работы.</b>", reply_markup=kb)
     await callback.bot.send_message(ADMIN_ID, f"✅ Клиент принял работу по заявке №{order_id}.")
 
 

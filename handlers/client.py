@@ -3,7 +3,11 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery
-from keyboards.client_kb import main_menu_kb, cancel_kb, back_to_main_kb
+# Добавлены импорты для нового меню информации
+from keyboards.client_kb import (
+    main_menu_kb, cancel_kb, back_to_main_kb,
+    info_menu_kb, back_to_info_kb
+)
 from database import add_user, get_portfolio
 from config import ADMIN_ID
 
@@ -21,10 +25,22 @@ async def cmd_start(message: Message, state: FSMContext):
     await add_user(message.from_user.id, message.from_user.username or "NoUsername")
     text = (
         "👋 <b>Приветствую!</b>\n\n"
-        "Рад видеть тебя в моем боте. Я разрабатываю Telegram-ботов под ключ.\n\n"
+        "Рад видеть тебя в моем боте. Я профессионально разрабатываю Telegram-ботов под ключ.\n\n"
         "Выбирай нужный раздел и давай начнем! 👇"
     )
     await message.answer(text, reply_markup=main_menu_kb())
+
+
+# --- МЕНЮ ИНФОРМАЦИИ ---
+@router.callback_query(F.data == "info_menu")
+async def show_info_menu(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    if callback.message:
+        await callback.message.edit_text(
+            "ℹ️ <b>Полезная информация</b>\n\nВыбери нужный раздел ниже 👇",
+            reply_markup=info_menu_kb()
+        )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "cancel_action")
@@ -47,11 +63,11 @@ async def show_portfolio(callback: CallbackQuery):
     if not items:
         await callback.message.edit_text(
             "💼 <b>Мое портфолио</b>\n\nПока здесь пусто, но я уже работаю над новыми крутыми проектами!",
-            reply_markup=back_to_main_kb()
+            reply_markup=back_to_info_kb() # Изменено на возврат в Информацию
         )
         return
 
-    await callback.message.edit_text("💼 <b>Мои работы:</b>", reply_markup=back_to_main_kb())
+    await callback.message.edit_text("💼 <b>Мои работы:</b>", reply_markup=back_to_info_kb()) # Изменено
 
     for item in items:
         text = f"<b>{item[1]}</b>\n\n{item[2]}"
@@ -71,15 +87,15 @@ async def show_portfolio(callback: CallbackQuery):
 async def how_it_works(callback: CallbackQuery):
     text = (
         "ℹ️ <b>Как проходит работа:</b>\n"
-        "━━━━━━━━━━━━━━━━━\n\n"
-        "1️⃣ Вы оставляете заявку.\n\n"
-        "2️⃣ Я согласовываю с вами точную цену.\n\n"
-        "3️⃣ Вы вносите оплату.\n\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        "1️⃣ Вы оставляете заявку.\n"
+        "2️⃣ Я согласовываю с вами точную цену.\n"
+        "3️⃣ Вы вносите оплату.\n"
         "4️⃣ Я присылаю готовый результат прямо в этот чат.\n\n"
-        "━━━━━━━━━━━━━━━━━\n"
+        "━━━━━━━━━━━━━━━━━━\n"
         "🛡 <b>Гарантии:</b> Если что-то пойдет не так по моей вине — я верну деньги."
     )
-    await callback.message.edit_text(text, reply_markup=back_to_main_kb())
+    await callback.message.edit_text(text, reply_markup=back_to_info_kb()) # Изменено
     await callback.answer()
 
 
@@ -87,23 +103,24 @@ async def how_it_works(callback: CallbackQuery):
 async def payment_info(callback: CallbackQuery):
     text = (
         "💳 <b>Оплата и гарантии</b>\n"
-        "━━━━━━━━━━━━━━━━━\n\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
         "Доступные способы:\n"
         "├ 🇷🇺 Карта РФ / СБП\n"
-        "└ 🟢 ЮMoney\n"
-        "━━━━━━━━━━━━━━━━━\n"
+        "├ 🟢 ЮMoney\n"
+        "├ 🪙 Криптовалюта\n"
+        "└ 🌍 Зарубежные сервисы\n\n"
+        "━━━━━━━━━━━━━━━━━━\n"
         "Вы можете оплатить 100% или внести предоплату 50%."
     )
-    await callback.message.edit_text(text, reply_markup=back_to_main_kb())
+    await callback.message.edit_text(text, reply_markup=back_to_info_kb()) # Изменено
     await callback.answer()
 
 
-# --- ВОТ ТОТ САМЫЙ КРАСИВЫЙ ПРАЙС-ЛИСТ ---
 @router.callback_query(F.data == "price_list")
 async def show_price(callback: CallbackQuery):
     text = (
         "💰 <b>Прайс-лист</b>\n"
-        "━━━━━━━━━━━━━━━━━\n\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
         "🟢 <b>Простые боты (от 500 ₽):</b>\n"
         "1. Анкетный бот — передает анкеты пользователей админу\n"
         "2. Бот счетчик — считает количество чего-либо\n"
@@ -125,10 +142,10 @@ async def show_price(callback: CallbackQuery):
         "• Настройка сервера и деплой (хостинг): <b>+500 ₽</b>\n"
         "• Разработка кастомного дизайна (кнопки, меню): <b>+700 ₽</b>\n"
         "• Доработка / починка чужого кода: <b>от 500 ₽/час</b>\n\n"
-        "━━━━━━━━━━━━━━━━━\n"
+        "━━━━━━━━━━━━━━━━━━\n"
         "📍 <i>Точная стоимость зависит от задач. Оставьте заявку для расчета!</i>"
     )
-    await callback.message.edit_text(text, reply_markup=back_to_main_kb())
+    await callback.message.edit_text(text, reply_markup=back_to_info_kb()) # Изменено
     await callback.answer()
 
 

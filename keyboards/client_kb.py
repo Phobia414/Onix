@@ -5,16 +5,25 @@ from datetime import datetime
 def main_menu_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📝 Оставить заявку", callback_data="new_order")],
-        [InlineKeyboardButton(text="💰 Услуги и цены", callback_data="price_list")],
-        [InlineKeyboardButton(text="💳 Оплата и гарантии", callback_data="payment_info")],
-        [InlineKeyboardButton(text="💼 Портфолио", callback_data="portfolio")],
-        [InlineKeyboardButton(text="ℹ️ Как это работает", callback_data="how_it_works")],
-        [InlineKeyboardButton(text="⭐ Отзывы", callback_data="leave_review")],
         [InlineKeyboardButton(text="📊 Мои заявки", callback_data="my_orders")],
-        [InlineKeyboardButton(text="🎁 Пригласить друга", callback_data="referral_menu")],
+        [InlineKeyboardButton(text="⭐ Отзывы", callback_data="view_reviews")], # Изменено
+        [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info_menu")],
         [InlineKeyboardButton(text="💬 Связь со мной", callback_data="contact_me")]
     ])
 
+def info_menu_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📖 Как это работает", callback_data="how_it_works")],
+        [InlineKeyboardButton(text="💰 Услуги и цены", callback_data="price_list")],
+        [InlineKeyboardButton(text="💳 Оплата и гарантии", callback_data="payment_info")],
+        [InlineKeyboardButton(text="💼 Портфолио", callback_data="portfolio")],
+        [InlineKeyboardButton(text="🎁 Пригласить друга", callback_data="referral_menu")],
+        [InlineKeyboardButton(text="🔙 В главное меню", callback_data="cancel_action")]
+    ])
+
+def back_to_info_kb():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад в Информацию", callback_data="info_menu")]])
 
 def back_to_main_kb():
     return InlineKeyboardMarkup(
