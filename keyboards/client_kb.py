@@ -2,14 +2,74 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime
 
 
+# === СПРАВОЧНИКИ ТИПОВ БОТОВ ===
+BOT_TYPES = {
+    "easy": [
+        ("anketa", "Анкетный бот"),
+        ("counter", "Бот счетчик"),
+        ("info", "Инфо-рассыльщик"),
+        ("helper", "Бот помощник"),
+    ],
+    "medium": [
+        ("db", "Бот с Базой Данных"),
+        ("booking", "Бот для записи"),
+        ("api", "Бот с API"),
+        ("quiz", "Квиз-бот"),
+        ("shop", "Простой магазин"),
+    ],
+    "hard": [
+        ("auto", "Магазин с автовыдачей"),
+        ("admin_panel", "Бот с админ-панелью"),
+        ("ai", "Бот с ИИ"),
+        ("webapp", "Telegram Web Apps"),
+    ]
+}
+
+# Отображение с эмодзи (для кнопок)
+BOT_TYPE_EMOJI = {
+    "anketa": "📝 Анкетный бот",
+    "counter": "🔢 Бот счетчик",
+    "info": "📢 Инфо-рассыльщик",
+    "helper": "🤖 Бот помощник",
+    "db": "🗄 Бот с Базой Данных",
+    "booking": "📅 Бот для записи",
+    "api": "🔗 Бот с API",
+    "quiz": "🧩 Квиз-бот",
+    "shop": "🛒 Простой магазин",
+    "auto": "⚡ Магазин с автовыдачей",
+    "admin_panel": "⚙️ Бот с админ-панелью",
+    "ai": "🧠 Бот с ИИ",
+    "webapp": "🌐 Telegram Web Apps",
+}
+
+# Чистые названия (для записи в БД и админ-панели)
+BOT_TYPE_NAMES = {code: name for code, name in BOT_TYPE_EMOJI.items()}
+# Убираем эмодзи и для чистых имен используем label из BOT_TYPES
+BOT_TYPE_NAMES = {code: label for group in BOT_TYPES.values() for code, label in group}
+
+
+def calc_complexity(selected_codes: list) -> str:
+    """Определяет общую сложность заявки по самому сложному выбранному типу."""
+    if not selected_codes:
+        return "Легкий"
+    hard_codes = [c for c, _ in BOT_TYPES["hard"]]
+    medium_codes = [c for c, _ in BOT_TYPES["medium"]]
+    if any(c in hard_codes for c in selected_codes):
+        return "Сложный"
+    if any(c in medium_codes for c in selected_codes):
+        return "Средний"
+    return "Легкий"
+
+
 def main_menu_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📝 Оставить заявку", callback_data="new_order")],
         [InlineKeyboardButton(text="📊 Мои заявки", callback_data="my_orders")],
-        [InlineKeyboardButton(text="⭐ Отзывы", callback_data="view_reviews")], # Изменено
+        [InlineKeyboardButton(text="⭐ Отзывы", callback_data="view_reviews")],
         [InlineKeyboardButton(text="ℹ️ Информация", callback_data="info_menu")],
         [InlineKeyboardButton(text="💬 Связь со мной", callback_data="contact_me")]
     ])
+
 
 def info_menu_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -21,62 +81,45 @@ def info_menu_kb():
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="cancel_action")]
     ])
 
+
 def back_to_info_kb():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад в Информацию", callback_data="info_menu")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Назад в Информацию", callback_data="info_menu")]])
+
 
 def back_to_main_kb():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="🔙 В главное меню", callback_data="cancel_action")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 В главное меню", callback_data="cancel_action")]])
 
 
-# 1. Выбор сложности
-def complexity_kb():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🟢 Легкие (от 500 ₽)", callback_data="comp_Легкий")],
-        [InlineKeyboardButton(text="🟡 Средние (от 1500 ₽)", callback_data="comp_Средний")],
-        [InlineKeyboardButton(text="🔴 Сложные (от 6000 ₽)", callback_data="comp_Сложный")],
-        [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_action")]
-    ])
+# === ВСЕ ТИПЫ БОТОВ В ОДНОМ ЭКРАНЕ, СГРУППИРОВАННЫЕ ПО СЛОЖНОСТИ ===
+def all_bots_kb(selected: list):
+    buttons = []
 
+    buttons.append([InlineKeyboardButton(text="─── 🟢 ЛЕГКИЕ (от 500 ₽) ───", callback_data="ignore")])
+    for code, label in BOT_TYPES["easy"]:
+        mark = "✅ " if code in selected else "▫️ "
+        buttons.append([InlineKeyboardButton(text=f"{mark}{label}", callback_data=f"tog_{code}")])
 
-# 2. Кнопки для Легких
-def easy_bots_kb():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📝 Анкетный бот", callback_data="bot_Анкетный бот")],
-        [InlineKeyboardButton(text="🔢 Бот счетчик", callback_data="bot_Бот счетчик")],
-        [InlineKeyboardButton(text="📢 Инфо-рассыльщик", callback_data="bot_Инфо-рассыльщик")],
-        [InlineKeyboardButton(text="🤖 Бот помощник", callback_data="bot_Бот помощник")],
-        [InlineKeyboardButton(text="🔙 Назад к сложности", callback_data="new_order")]
-    ])
+    buttons.append([InlineKeyboardButton(text="─── 🟡 СРЕДНИЕ (от 1500 ₽) ───", callback_data="ignore")])
+    for code, label in BOT_TYPES["medium"]:
+        mark = "✅ " if code in selected else "▫️ "
+        buttons.append([InlineKeyboardButton(text=f"{mark}{label}", callback_data=f"tog_{code}")])
 
+    buttons.append([InlineKeyboardButton(text="─── 🔴 СЛОЖНЫЕ (от 6000 ₽) ───", callback_data="ignore")])
+    for code, label in BOT_TYPES["hard"]:
+        mark = "✅ " if code in selected else "▫️ "
+        buttons.append([InlineKeyboardButton(text=f"{mark}{label}", callback_data=f"tog_{code}")])
 
-# 3. Кнопки для Средних
-def medium_bots_kb():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🗄 Бот с Базой Данных", callback_data="bot_Бот с БД")],
-        [InlineKeyboardButton(text="📅 Бот для записи", callback_data="bot_Бот для записи")],
-        [InlineKeyboardButton(text="🔗 Бот с API", callback_data="bot_Бот с API")],
-        [InlineKeyboardButton(text="🧩 Квиз-бот", callback_data="bot_Квиз-бот")],
-        [InlineKeyboardButton(text="🛒 Простой магазин", callback_data="bot_Простой магазин")],
-        [InlineKeyboardButton(text="🔙 Назад к сложности", callback_data="new_order")]
-    ])
+    if selected:
+        buttons.append([InlineKeyboardButton(
+            text=f"✔️ Готово (выбрано: {len(selected)})", callback_data="bot_done"
+        )])
 
-
-# 4. Кнопки для Сложных
-def hard_bots_kb():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⚡ Магазин с автовыдачей", callback_data="bot_Магазин с автовыдачей")],
-        [InlineKeyboardButton(text="⚙️ Бот с админ-панелью", callback_data="bot_Бот с админ-панелью")],
-        [InlineKeyboardButton(text="🧠 Бот с ИИ", callback_data="bot_Бот с ИИ")],
-        [InlineKeyboardButton(text="🌐 Telegram Web Apps", callback_data="bot_Web Apps")],
-        [InlineKeyboardButton(text="🔙 Назад к сложности", callback_data="new_order")]
-    ])
+    buttons.append([InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_action")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def cancel_kb():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_action")]])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_action")]])
 
 
 def review_stars_kb(order_id: int = None):
@@ -106,15 +149,14 @@ def get_time_left(created_at_str):
 
 def order_pay_kb(order_id: int, price: int, created_at: str):
     kb = [
-        [InlineKeyboardButton(text=f"💳 Оплатить 100% ({price} ₽)", callback_data=f"pay_100_{order_id}")],
-        [InlineKeyboardButton(text=f"💰 Предоплата 50% ({int(price / 2)} ₽)", callback_data=f"pay_50_{order_id}")],
+        [InlineKeyboardButton(text=f"💳 Оплатить 100% ({price} ₽)", callback_data=f"pay_stars_100_{order_id}")],
+        [InlineKeyboardButton(text=f"💰 Предоплата 50% ({int(price / 2)} ₽)", callback_data=f"pay_stars_50_{order_id}")],
         [InlineKeyboardButton(text="🎁 Пригласить друга (-10%)", callback_data=f"ref_{order_id}")],
         [InlineKeyboardButton(text="📄 Посмотреть заявку", callback_data=f"view_order_{order_id}")],
     ]
     time_left = get_time_left(created_at)
     if time_left > 0:
-        kb.append([InlineKeyboardButton(text=f"❌ Отменить заявку (осталось {time_left} сек)",
-                                        callback_data=f"cancel_order_{order_id}")])
+        kb.append([InlineKeyboardButton(text=f"❌ Отменить заявку (осталось {time_left} сек)", callback_data=f"cancel_order_{order_id}")])
     else:
         kb.append([InlineKeyboardButton(text="❌ Время на отмену истекло", callback_data="ignore")])
 
@@ -129,6 +171,6 @@ def deliver_result_kb(order_id: int):
         [InlineKeyboardButton(text="⭐ Оставить отзыв", callback_data=f"leave_review_{order_id}")],
         [InlineKeyboardButton(text="📄 Посмотреть заявку", callback_data=f"view_order_{order_id}")],
         [InlineKeyboardButton(text="💸 Запросить возврат", callback_data=f"refund_{order_id}")],
-        [InlineKeyboardButton(text="💬 Связаться с автором", url="https://t.me/твой_ник")],
+        [InlineKeyboardButton(text="💬 Связаться с автором", callback_data=f"contact_admin_{order_id}")],
         [InlineKeyboardButton(text="🔙 В главное меню", callback_data="cancel_action")]
     ])

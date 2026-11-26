@@ -1,7 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-# Добавили статус "closed"
 STATUSES = {
     "new": "🟡 На рассмотрении",
     "in_work": "🔵 В работе",
@@ -20,6 +19,7 @@ def admin_menu_kb():
         [InlineKeyboardButton(text="📥 Новые заявки", callback_data="admin_new_orders")],
         [InlineKeyboardButton(text="📋 Все заявки", callback_data="admin_all_orders")],
         [InlineKeyboardButton(text="💼 Управление портфолио", callback_data="admin_portfolio")],
+        [InlineKeyboardButton(text="⭐ Управление отзывами", callback_data="admin_reviews")], # НОВОЕ
         [InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats")],
         [InlineKeyboardButton(text="📢 Сделать рассылку", callback_data="admin_broadcast")]
     ])
@@ -27,8 +27,6 @@ def admin_menu_kb():
 
 def admin_order_kb(order_id: int, current_status: str):
     builder = InlineKeyboardBuilder()
-
-    # Если заявка выполнена, показываем главную кнопку "Закрыть"
     if current_status == "done":
         builder.button(text="🔒 Закрыть заявку", callback_data=f"close_order_{order_id}")
     elif current_status != "closed":
@@ -43,7 +41,6 @@ def admin_order_kb(order_id: int, current_status: str):
         builder.button(text="🚫 Заблокировать клиента", callback_data=f"block_{order_id}")
 
     builder.button(text="🔙 Назад к списку", callback_data="admin_all_orders")
-
     builder.adjust(1)
     return builder.as_markup()
 
@@ -51,7 +48,7 @@ def admin_order_kb(order_id: int, current_status: str):
 def admin_status_select_kb(order_id: int):
     builder = InlineKeyboardBuilder()
     for key, name in STATUSES.items():
-        if key != "closed":  # Закрываем только через специальную кнопку
+        if key != "closed":
             builder.button(text=name, callback_data=f"set_status:{key}:{order_id}")
     builder.button(text="🔙 Отмена", callback_data=f"admin_view_{order_id}")
     builder.adjust(1)
@@ -63,7 +60,6 @@ def admin_orders_list_kb(orders):
     for o in orders:
         status_ru = STATUSES.get(o[6], o[6])
         builder.button(text=f"№{o[0]} | {o[2]} | {status_ru}", callback_data=f"admin_view_{o[0]}")
-
     builder.button(text="🔙 В админ-меню", callback_data="admin_main_menu")
     builder.adjust(1)
     return builder.as_markup()
@@ -94,6 +90,16 @@ def delete_portfolio_kb(items):
 
 
 def cancel_portfolio_kb():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_portfolio")]
-    ])
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Отмена", callback_data="admin_portfolio")]])
+
+
+# НОВАЯ КЛАВИАТУРА ДЛЯ ОТЗЫВОВ
+def admin_reviews_list_kb(reviews):
+    builder = InlineKeyboardBuilder()
+    for r in reviews:
+        stars = "⭐" * r[2]
+        short_text = r[3][:20] + "..." if len(r[3]) > 20 else r[3]
+        builder.button(text=f"{stars} | №{r[1]} | {short_text}", callback_data=f"admin_del_review_{r[0]}")
+    builder.button(text="🔙 В админ-меню", callback_data="admin_main_menu")
+    builder.adjust(1)
+    return builder.as_markup()

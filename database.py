@@ -15,7 +15,6 @@ async def init_db():
                 penalty_order_id INTEGER DEFAULT 0
             )
         """)
-        # ДОБАВЛЕНО ПОЛЕ complexity (сложность)
         await db.execute("""
             CREATE TABLE IF NOT EXISTS orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +40,6 @@ async def init_db():
                 link TEXT
             )
         """)
-        # НОВАЯ ТАБЛИЦА ДЛЯ ОТЗЫВОВ
         await db.execute("""
             CREATE TABLE IF NOT EXISTS reviews (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,8 +61,7 @@ async def add_user(user_id: int, username: str):
 
 async def get_user_block_info(user_id: int):
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute("SELECT is_blocked, penalty_amount, penalty_order_id FROM users WHERE user_id = ?",
-                                  (user_id,))
+        cursor = await db.execute("SELECT is_blocked, penalty_amount, penalty_order_id FROM users WHERE user_id = ?", (user_id,))
         res = await cursor.fetchone()
         if res:
             return bool(res[0]), res[1], res[2]
@@ -74,32 +71,23 @@ async def get_user_block_info(user_id: int):
 async def block_user(user_id: int, status: bool = True, penalty: int = 0, order_id: int = 0):
     async with aiosqlite.connect(DB_NAME) as db:
         if status:
-            await db.execute(
-                "UPDATE users SET is_blocked = ?, penalty_amount = ?, penalty_order_id = ? WHERE user_id = ?",
-                (status, penalty, order_id, user_id))
+            await db.execute("UPDATE users SET is_blocked = ?, penalty_amount = ?, penalty_order_id = ? WHERE user_id = ?", (status, penalty, order_id, user_id))
         else:
-            await db.execute(
-                "UPDATE users SET is_blocked = FALSE, penalty_amount = 0, penalty_order_id = 0 WHERE user_id = ?",
-                (user_id,))
+            await db.execute("UPDATE users SET is_blocked = FALSE, penalty_amount = 0, penalty_order_id = 0 WHERE user_id = ?", (user_id,))
         await db.commit()
 
 
 async def create_order(user_id: int, complexity: str, bot_type: str, task: str, budget: str) -> int:
     now_str = datetime.now().isoformat()
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute(
-            "INSERT INTO orders (user_id, complexity, bot_type, task, budget, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, complexity, bot_type, task, budget, now_str)
-        )
+        cursor = await db.execute("INSERT INTO orders (user_id, complexity, bot_type, task, budget, created_at) VALUES (?, ?, ?, ?, ?, ?)", (user_id, complexity, bot_type, task, budget, now_str))
         await db.commit()
         return cursor.lastrowid
 
 
 async def get_user_orders(user_id: int):
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute(
-            "SELECT id, bot_type, task, price, status, created_at FROM orders WHERE user_id = ? ORDER BY id DESC",
-            (user_id,))
+        cursor = await db.execute("SELECT id, bot_type, task, price, status, created_at FROM orders WHERE user_id = ? ORDER BY id DESC", (user_id,))
         return await cursor.fetchall()
 
 
@@ -137,10 +125,7 @@ async def deliver_order(order_id: int):
 async def get_orders_to_check():
     check_date = (datetime.now() - timedelta(days=7)).isoformat()
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute(
-            "SELECT id, user_id, friend_id, price FROM orders WHERE status = 'done' AND delivered_at <= ? AND friend_id != 0",
-            (check_date,)
-        )
+        cursor = await db.execute("SELECT id, user_id, friend_id, price FROM orders WHERE status = 'done' AND delivered_at <= ? AND friend_id != 0", (check_date,))
         return await cursor.fetchall()
 
 
@@ -150,8 +135,7 @@ async def apply_referral(order_id: int, friend_id: int):
         res = await cursor.fetchone()
         if res and res[0] > 0:
             new_price = int(res[0] * 0.9)
-            await db.execute("UPDATE orders SET price = ?, discount_applied = TRUE, friend_id = ? WHERE id = ?",
-                             (new_price, friend_id, order_id))
+            await db.execute("UPDATE orders SET price = ?, discount_applied = TRUE, friend_id = ? WHERE id = ?", (new_price, friend_id, order_id))
             await db.commit()
             return new_price
     return None
@@ -159,15 +143,13 @@ async def apply_referral(order_id: int, friend_id: int):
 
 async def get_all_new_orders():
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute(
-            "SELECT id, user_id, complexity, bot_type, task, budget FROM orders WHERE status = 'new'")
+        cursor = await db.execute("SELECT id, user_id, complexity, bot_type, task, budget FROM orders WHERE status = 'new'")
         return await cursor.fetchall()
 
 
 async def get_all_orders():
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute(
-            "SELECT id, user_id, complexity, bot_type, task, price, status FROM orders ORDER BY id DESC")
+        cursor = await db.execute("SELECT id, user_id, complexity, bot_type, task, price, status FROM orders ORDER BY id DESC")
         return await cursor.fetchall()
 
 
@@ -190,8 +172,7 @@ async def get_all_users():
 
 async def add_portfolio(title: str, desc: str, photo_id: str, link: str):
     async with aiosqlite.connect(DB_NAME) as db:
-        await db.execute("INSERT INTO portfolio (title, description, photo_id, link) VALUES (?, ?, ?, ?)",
-                         (title, desc, photo_id, link))
+        await db.execute("INSERT INTO portfolio (title, description, photo_id, link) VALUES (?, ?, ?, ?)", (title, desc, photo_id, link))
         await db.commit()
 
 
@@ -207,7 +188,7 @@ async def delete_portfolio(item_id: int):
         await db.commit()
 
 
-# --- НОВЫЕ ФУНКЦИИ ДЛЯ ОТЗЫВОВ ---
+# --- ФУНКЦИИ ДЛЯ ОТЗЫВОВ ---
 async def check_order_reviewed(order_id: int) -> bool:
     async with aiosqlite.connect(DB_NAME) as db:
         cursor = await db.execute("SELECT id FROM reviews WHERE order_id = ?", (order_id,))
@@ -217,10 +198,7 @@ async def check_order_reviewed(order_id: int) -> bool:
 async def add_review(order_id: int, user_id: int, rating: int, text: str):
     now_str = datetime.now().isoformat()
     async with aiosqlite.connect(DB_NAME) as db:
-        await db.execute(
-            "INSERT INTO reviews (order_id, user_id, rating, text, created_at) VALUES (?, ?, ?, ?, ?)",
-            (order_id, user_id, rating, text, now_str)
-        )
+        await db.execute("INSERT INTO reviews (order_id, user_id, rating, text, created_at) VALUES (?, ?, ?, ?, ?)", (order_id, user_id, rating, text, now_str))
         await db.commit()
 
 
@@ -231,10 +209,23 @@ async def get_reviews_stats():
         return count or 0, round(avg, 1) if avg else 0.0
 
 
-async def get_recent_reviews(limit: int = 5):
+async def get_reviews_paginated(page: int, limit: int = 5):
+    offset = (page - 1) * limit
     async with aiosqlite.connect(DB_NAME) as db:
-        cursor = await db.execute("""
-            SELECT rating, text, created_at FROM reviews 
-            ORDER BY id DESC LIMIT ?
-        """, (limit,))
+        cursor = await db.execute("SELECT COUNT(*) FROM reviews")
+        total = (await cursor.fetchone())[0]
+        cursor = await db.execute("SELECT rating, text, created_at FROM reviews ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
+        reviews = await cursor.fetchall()
+        return reviews, total
+
+
+async def get_all_reviews_for_admin(limit: int = 10, offset: int = 0):
+    async with aiosqlite.connect(DB_NAME) as db:
+        cursor = await db.execute("SELECT id, order_id, rating, text, created_at FROM reviews ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset))
         return await cursor.fetchall()
+
+
+async def delete_review_db(review_id: int):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute("DELETE FROM reviews WHERE id = ?", (review_id,))
+        await db.commit()
