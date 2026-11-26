@@ -37,13 +37,13 @@ async def show_order_card(message: Message, order_id: int):
     status_ru = STATUSES.get(order[7], order[7])
     text = (
         f"📦 <b>Заявка №{order[0]}</b>\n"
-        f"━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━\n\n"
         f"👤 <b>ID клиента:</b> <code>{order[1]}</code>\n\n"
         f"⚙️ <b>Сложность:</b> {order[2]}\n"
         f"🤖 <b>Тип:</b> {order[3]}\n\n"
         f"💰 <b>Бюджет:</b> {order[5]} ₽ | <b>Цена:</b> {order[6]} ₽\n\n"
         f"📊 <b>Статус:</b> {status_ru}\n\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
+        f"━━━━━━━━━━━━━━━━━\n"
         f"📝 <b>Задача:</b>\n<i>{order[4]}</i>"
     )
     await message.edit_text(text, reply_markup=admin_order_kb(order[0], order[7]))
@@ -87,11 +87,11 @@ async def show_stats(callback: CallbackQuery):
     if not callback.from_user or callback.from_user.id != ADMIN_ID: return
     users_count, orders_count, total_earned = await get_stats()
     text = (
-        "📊 <b>Статистика бота</b>\n━━━━━━━━━━━━━━━━━━\n\n"
+        "📊 <b>Статистика бота</b>\n━━━━━━━━━━━━━━━━━\n\n"
         f"👥 Пользователей: <b>{users_count}</b>\n\n"
         f"📦 Всего заявок: <b>{orders_count}</b>\n\n"
         f"💵 Заработано: <b>{total_earned} ₽</b>\n\n"
-        "━━━━━━━━━━━━━━━━━━"
+        "━━━━━━━━━━━━━━━━━"
     )
     await callback.message.edit_text(text, reply_markup=admin_menu_kb())
     await callback.answer()

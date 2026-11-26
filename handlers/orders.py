@@ -23,7 +23,7 @@ class OrderState(StatesGroup):
 # Тексты прайсов
 EASY_TEXT = (
     "🟢 <b>Легкие боты (от 500 ₽)</b>\n"
-    "━━━━━━━━━━━━━━━━━━\n\n"
+    "━━━━━━━━━━━━━━━━━\n\n"
     "1. Анкетный бот — передает анкеты пользователей админу\n"
     "2. Бот счетчик — считает количество чего-либо\n"
     "3. Инфо-рассыльщик — для отправки новостей\n"
@@ -32,7 +32,7 @@ EASY_TEXT = (
 )
 MEDIUM_TEXT = (
     "🟡 <b>Средние боты (от 1500 ₽)</b>\n"
-    "━━━━━━━━━━━━━━━━━━\n\n"
+    "━━━━━━━━━━━━━━━━━\n\n"
     "1. Боты с БД — сохранение профилей, истории заказов\n"
     "2. Боты для записи — салоны, репетиторы\n"
     "3. Боты с API — отслеживание посылок, курсы валют\n"
@@ -42,7 +42,7 @@ MEDIUM_TEXT = (
 )
 HARD_TEXT = (
     "🔴 <b>Сложные боты (от 6000 ₽)</b>\n"
-    "━━━━━━━━━━━━━━━━━━\n\n"
+    "━━━━━━━━━━━━━━━━━\n\n"
     "1. Магазины с автовыдачей — моментальная выдача ключей\n"
     "2. Боты с админ-панелью — управление прямо в боте\n"
     "3. Боты с ИИ — интеграция ChatGPT, генерация картинок\n"
@@ -127,13 +127,13 @@ async def process_budget(message: Message, state: FSMContext):
     # Отправляем в админку
     admin_text = (
         f"🚨 <b>НОВАЯ ЗАЯВКА №{order_id}</b>\n"
-        f"━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━\n\n"
         f"👤 <b>Клиент:</b> @{message.from_user.username}\n"
         f"🆔 <code>{message.from_user.id}</code>\n\n"
         f"⚙️ <b>Сложность:</b> {data['complexity']}\n"
         f"🤖 <b>Тип:</b> {data['bot_type']}\n"
         f"💰 <b>Бюджет:</b> {message.text} ₽\n\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
+        f"━━━━━━━━━━━━━━━━━\n"
         f"📝 <b>Задача:</b>\n<i>{data['task']}</i>"
     )
     await message.bot.send_message(ADMIN_ID, admin_text, reply_markup=admin_order_kb(order_id, "new"))
@@ -158,12 +158,12 @@ async def my_orders(callback: CallbackQuery):
 
         card = (
             f"<b>Заявка №{o[0]}</b>\n"
-            f"━━━━━━━━━━━━━━━━━━\n\n"
+            f"━━━━━━━━━━━━━━━━━\n\n"
             f"📌 <b>Тип:</b> {o[1]}\n\n"
             f"📊 <b>Статус:</b> {status_text}\n\n"
             f"💰 <b>Цена:</b> {price_text}\n\n"
             f"📝 <b>Задача:</b>\n<i>{o[2][:50]}...</i>\n\n"
-            f"━━━━━━━━━━━━━━━━━━"
+            f"━━━━━━━━━━━━━━━━━"
         )
 
         view_kb = InlineKeyboardMarkup(
@@ -191,13 +191,13 @@ async def view_single_order(callback: CallbackQuery):
 
     card = (
         f"<b>Заявка №{order[0]}</b>\n"
-        f"━━━━━━━━━━━━━━━━━━\n\n"
+        f"━━━━━━━━━━━━━━━━━\n\n"
         f"⚙️ <b>Сложность:</b> {order[2]}\n"
         f"📌 <b>Тип:</b> {order[3]}\n\n"
         f"📊 <b>Статус:</b> {status_text}\n\n"
         f"💰 <b>Цена:</b> {price_text}\n\n"
         f"📝 <b>Задача:</b>\n<i>{order[4]}</i>\n\n"
-        f"━━━━━━━━━━━━━━━━━━"
+        f"━━━━━━━━━━━━━━━━━"
     )
 
     # Если заявка закрыта, убираем все кнопки действий
@@ -240,7 +240,7 @@ async def cancel_my_order(callback: CallbackQuery):
 # --- РЕФЕРАЛЬНАЯ ПРОГРАММА ---
 @router.callback_query(F.data == "referral_menu")
 async def show_referral_menu(callback: CallbackQuery):
-    text = "🎁 <b>Реферальная программа</b>\n━━━━━━━━━━━━━━━━━━\n\nУ нас действует система «1 заявка = 1 друг».\n\nСкидка <b>10%</b> на заявку, если приведете друга.\n\n1. Перейдите в <b>«Мои заявки»</b>.\n2. Нажмите <b>«Пригласить друга»</b> под заявкой."
+    text = "🎁 <b>Реферальная программа</b>\n━━━━━━━━━━━━━━━━━\n\nУ нас действует система «1 заявка = 1 друг».\n\nСкидка <b>10%</b> на заявку, если приведете друга.\n\n1. Перейдите в <b>«Мои заявки»</b>.\n2. Нажмите <b>«Пригласить друга»</b> под заявкой."
     await callback.message.edit_text(text, reply_markup=back_to_main_kb())
     await callback.answer()
 
@@ -251,7 +251,7 @@ async def generate_ref_link(callback: CallbackQuery, bot: Bot):
     bot_info = await bot.get_me()
     ref_link = f"https://t.me/{bot_info.username}?start=ref_{order_id}"
     await callback.message.answer(
-        f"🎁 <b>Ссылка для приглашения</b>\n━━━━━━━━━━━━━━━━━━\n\nСкидка 10% для <b>заявки №{order_id}</b>.\n\n<code>{ref_link}</code>")
+        f"🎁 <b>Ссылка для приглашения</b>\n━━━━━━━━━━━━━━━━━\n\nСкидка 10% для <b>заявки №{order_id}</b>.\n\n<code>{ref_link}</code>")
     await callback.answer()
 
 
